@@ -1,17 +1,23 @@
 # noticed
 "Noticed" is backend failure notification daemon for NGINX using Telegram.  
-***Usage:*** 
+
+**Installation:**  
+Just download latest version and modify config.
+  
+**Usage:** 
 ```
-noticed.py <Bot ID> <Bot Token> <Telegram Chat ID> <Error Page>  
+./noticed.py
 ```
-##Requirements
+  
+**Requirements**
 * Python 3.4 or greater  
 * URLLib3  
 * Certifi  
-##Configuration
+  
+**Configuration**
 Copy noticed.conf into your nginx directory and add 'include noticed.conf' into your server{} block.  
   
-***noticed.conf***  
+**noticed.conf**  
 ```
 error_page 502 503 504 /noticed.html;
 
@@ -26,3 +32,4 @@ location /noticed.html {
 }
 
 ```
+

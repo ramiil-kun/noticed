@@ -1,0 +1,14 @@
+#Rename to "config.cfg" and delete this line
+[Telegram]
+botID = <bot id>
+botToken = <bot token>
+chatID = <chat id>
+
+[Server]
+listen = 0.0.0.0:8081
+errorPage = ./data/error.html
+
+[Notificator]
+logflush = Both
+timeout = 10
+logLength = 10

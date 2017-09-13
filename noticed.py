@@ -1,10 +1,14 @@
+#!/usr/bin/python3
 from http.server import BaseHTTPRequestHandler, HTTPServer
-from socketserver import ThreadingMixIn
+from multiprocessing import Process
 
-import urllib3, threading, certifi, sys, getopt, time
+import urllib.parse as px
+
+import urllib3, certifi, sys, time, configparser
 
 journal = []
 http = urllib3.PoolManager(cert_reqs='CERT_REQUIRED',ca_certs=certifi.where())
+config = configparser.ConfigParser()
 
 class errorLog():
 
@@ -17,17 +21,19 @@ class errorLog():
 		self.errdt=dt
 		self.fhost=host
 		self.claddr=addr
-		self.clreq=req
+		self.clreq=px.quote(req)
 	def getDate(self):
 		return self.errdt
 	def getText(self):
 		return "Backend of `"+self.fhost+"` is unreachable.%0A"+"Client `"+self.claddr+"` requested page `"+self.clreq+"`"
 
-class ThreadingServer(ThreadingMixIn, HTTPServer):
-	pass
-
-def msgToBot(msg):
-	http.request("GET", "https://api.telegram.org/"+botID+":"+botToken+"/sendMessage?chat_id="+chatID+"&text="+msg) 
+def messaging():
+	if len(journal)>0:
+		msg = ''
+		for i in range(0, len(journal)):
+			msg+="%0A%0A"+journal[i].getText()
+		http.request("GET", "https://api.telegram.org/"+botID+":"+botToken+"/sendMessage?chat_id="+chatID+"&text="+msg)
+		del(journal[:])
 
 class rqHandler(BaseHTTPRequestHandler):
 
@@ -40,26 +46,37 @@ class rqHandler(BaseHTTPRequestHandler):
 
 	def do_GET(self):
 		self.do_HEAD()
-		if ((time.time()-journal[0].getDate()>10) or (len(journal)>10)):
-			msg = ''
-			for i in range(1, len(journal)):
-				msg+="%0A%0A"+journal[i].getText()
-			msgToBot(msg)
-			del(journal[:])
+		if ((time.time()-journal[0].getDate()>timeout) or (len(journal)>maxLogLength)):
+			MessagingProcess = Process(target=messaging())
+			MessagingProcess.run()
+		self.wfile.write("<!-- Noticed 1.0 by Nikita Lindmann, https://ramiil.in/ https://github.com/ramiil-kun/noticed/ -->".encode("utf-8"))
 		self.wfile.write(errorPage.encode("utf-8"))
 
 print("Noticed is backend failure notificator for NGINX using Telegram.")
-if (len(sys.argv)!=5):
-	print("Usage: "+sys.argv[0]+" <Bot ID> <Bot Token> <Telegram Chat ID> <Error Page>")
-	print("Copy noticed.conf into your nginx directory and add 'include noticed.conf' into your server{} block.")
-
+if (len(sys.argv)>1 and sys.argv[1]=='-h'):
+	print("Usage: "+sys.argv[0])
 	sys.exit(0)
-else:
-	botID = sys.argv[1]
-	botToken = sys.argv[2]
-	chatID = sys.argv[3]
-	errPageSource = sys.argv[4]
+
+try:
+
+	config.read('noticed.cfg')
+
+	botID = config['Telegram']['botID']
+	botToken = config['Telegram']['botToken']
+	chatID = config['Telegram']['chatID']
+
+	listen = config['Server']['listen'].split(":")
+	errPageSource = config['Server']['errorPage']
+
+	logFlushMode = config['Notificator']['logFlush'] #May be 'Timeout', 'Overflow', 'Both', and 'Single'
+	if logFlushMode in ('Timeout', 'Both'):
+		timeout = int(config['Notificator']['timeout'])
+	if logFlushMode in ('Overflow', 'Both'):           
+		maxLogLength = int(config['Notificator']['logLength'])
+
+except:
+	print("Error parsing config file.")
 
 errorPage = open(errPageSource, "r").read()
 print("Noticed Started")
-ThreadingServer(('127.0.0.1', 8081), rqHandler).serve_forever()
+HTTPServer(('127.0.0.1', 8081), rqHandler).serve_forever()
