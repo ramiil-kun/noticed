@@ -32,7 +32,7 @@ def messaging():
 		msg = ''
 		for i in range(0, len(journal)):
 			msg+="%0A%0A"+journal[i].getText()
-		http.request("GET", "https://api.telegram.org/"+botID+":"+botToken+"/sendMessage?chat_id="+chatID+"&text="+msg)
+		http.request("GET", "https://api.telegram.org/"+botID+":"+botToken+"/sendMessage?chat_id="+chatID+"&text="+msg+"&parse_mode=markdown")
 		del(journal[:])
 
 class rqHandler(BaseHTTPRequestHandler):
@@ -49,6 +49,7 @@ class rqHandler(BaseHTTPRequestHandler):
 		if ((time.time()-journal[0].getDate()>timeout) or (len(journal)>maxLogLength)):
 			MessagingProcess = Process(target=messaging())
 			MessagingProcess.run()
+			print("")
 		self.wfile.write("<!-- Noticed 1.0 by Nikita Lindmann, https://ramiil.in/ https://github.com/ramiil-kun/noticed/ -->".encode("utf-8"))
 		self.wfile.write(errorPage.encode("utf-8"))
 
