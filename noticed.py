@@ -4,7 +4,7 @@ from multiprocessing import Process
 
 import urllib.parse as px
 
-import urllib3, certifi, sys, time, configparser
+import urllib3, certifi, sys, time, configparser, os, datetime
 
 journal = []
 http = urllib3.PoolManager(cert_reqs='CERT_REQUIRED',ca_certs=certifi.where())
@@ -25,7 +25,8 @@ class errorLog():
 	def getDate(self):
 		return self.errdt
 	def getText(self):
-		return "Backend of `"+self.fhost+"` is unreachable.%0A"+"Client `"+self.claddr+"` requested page `"+self.clreq+"`"
+		text="Backend `{0}` is unreachable.%0AClient `{1}` requested page `{2}` at {3}.%0AMessage by noticed@{4}"
+		return text.format(self.fhost, self.claddr, self.clreq, datetime.datetime.fromtimestamp(self.errdt).strftime('%H:%M:%S'), hostname)
 
 def messaging():
 	if len(journal)>0:
@@ -53,14 +54,16 @@ class rqHandler(BaseHTTPRequestHandler):
 		self.wfile.write("<!-- Noticed 1.0 by Nikita Lindmann, https://ramiil.in/ https://github.com/ramiil-kun/noticed/ -->".encode("utf-8"))
 		self.wfile.write(errorPage.encode("utf-8"))
 
+
 print("Noticed is backend failure notificator for NGINX using Telegram.")
 if (len(sys.argv)>1 and sys.argv[1]=='-h'):
 	print("Usage: "+sys.argv[0])
 	sys.exit(0)
 
 try:
-
 	config.read('noticed.cfg')
+
+	hostname = os.uname()[1]
 
 	botID = config['Telegram']['botID']
 	botToken = config['Telegram']['botToken']

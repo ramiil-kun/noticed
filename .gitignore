@@ -1,2 +1,5 @@
 #Production-ready configs
 *.cfg
+
+#Production error-pages
+servertechworks.html  servertechworksplan.html
