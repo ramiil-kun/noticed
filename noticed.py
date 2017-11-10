@@ -1,4 +1,8 @@
 #!/usr/bin/python3
+
+VERSION = "1.1"
+template = "Backend `{0}` is unreachable.%0AClient `{1}` requested page `{2}` at {3}.%0AMessage by noticed@{4}"
+
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from multiprocessing import Process
 
@@ -7,7 +11,7 @@ import urllib.parse as px
 import urllib3, certifi, sys, time, configparser, os, datetime
 
 journal = []
-http = urllib3.PoolManager(cert_reqs='CERT_REQUIRED',ca_certs=certifi.where())
+http = urllib3.PoolManager(cert_reqs='CERT_REQUIRED', ca_certs=certifi.where())
 config = configparser.ConfigParser()
 
 class errorLog():
@@ -25,8 +29,8 @@ class errorLog():
 	def getDate(self):
 		return self.errdt
 	def getText(self):
-		text="Backend `{0}` is unreachable.%0AClient `{1}` requested page `{2}` at {3}.%0AMessage by noticed@{4}"
-		return text.format(self.fhost, self.claddr, self.clreq, datetime.datetime.fromtimestamp(self.errdt).strftime('%H:%M:%S'), hostname)
+		#text="Backend `{0}` is unreachable.%0AClient `{1}` requested page `{2}` at {3}.%0AMessage by noticed@{4}"
+		return template.format(self.fhost, self.claddr, self.clreq, datetime.datetime.fromtimestamp(self.errdt).strftime('%H:%M:%S'), hostname)
 
 def messaging():
 	if len(journal)>0:
@@ -51,11 +55,11 @@ class rqHandler(BaseHTTPRequestHandler):
 			MessagingProcess = Process(target=messaging())
 			MessagingProcess.run()
 			print("")
-		self.wfile.write("<!-- Noticed 1.0 by Nikita Lindmann, https://ramiil.in/ https://github.com/ramiil-kun/noticed/ -->".encode("utf-8"))
+		self.wfile.write("<!-- Noticed by Nikita Lindmann, https://ramiil.in/ https://github.com/ramiil-kun/noticed/ -->".encode("utf-8"))
 		self.wfile.write(errorPage.encode("utf-8"))
 
 
-print("Noticed is backend failure notificator for NGINX using Telegram.")
+print("Noticed "+VERSION+": backend failure notificator for NGINX using Telegram.")
 if (len(sys.argv)>1 and sys.argv[1]=='-h'):
 	print("Usage: "+sys.argv[0])
 	sys.exit(0)
@@ -69,7 +73,7 @@ try:
 	botToken = config['Telegram']['botToken']
 	chatID = config['Telegram']['chatID']
 
-	listen = config['Server']['listen'].split(":")
+	addr, port = config['Server']['listen'].split(":")
 	errPageSource = config['Server']['errorPage']
 
 	logFlushMode = config['Notificator']['logFlush'] #May be 'Timeout', 'Overflow', 'Both', and 'Single'
@@ -83,4 +87,4 @@ except:
 
 errorPage = open(errPageSource, "r").read()
 print("Noticed Started")
-HTTPServer(('127.0.0.1', 8081), rqHandler).serve_forever()
+HTTPServer((addr, int(port)), rqHandler).serve_forever()

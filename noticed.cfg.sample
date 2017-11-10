@@ -6,9 +6,9 @@ chatID = <chat id>
 
 [Server]
 listen = 0.0.0.0:8081
-errorPage = ./data/error.html
+errorPage = error.html
 
 [Notificator]
-logflush = Both
+logFlush = Both
 timeout = 10
 logLength = 10
